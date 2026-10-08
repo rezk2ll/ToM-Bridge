@@ -70,8 +70,13 @@ describe("MatrixSpaces", () => {
           "@bot:acme.example": 100,
         },
         events_default: 50,
+        events: {
+          "org.matrix.msc3401.call.member": 50,
+        },
         invite: 100,
         kick: 100,
+        ban: 100,
+        redact: 75,
       },
     });
     expect(JSON.stringify(options)).not.toContain("m.room.encryption");
@@ -197,6 +202,31 @@ describe("MatrixSpaces", () => {
         "@jdoe:acme.example": 50,
       },
       events_default: 50,
+      events: expect.objectContaining({
+        "org.matrix.msc3401.call.member": 50,
+      }),
+      redact: 75,
+    });
+  });
+
+  it("lets the members of an older space join a call", async () => {
+    client.getRoomStateEvent.mockResolvedValue({
+      users: {
+        "@jdoe:acme.example": 50,
+      },
+      events: {
+        "m.room.name": 100,
+      },
+    });
+
+    await spaces.setPowerLevels(ROOM, {
+      "@jdoe:acme.example": 50,
+    });
+
+    const [, , , content] = client.sendStateEvent.mock.calls[0]!;
+    expect(content.events).toMatchObject({
+      "m.room.name": 100,
+      "org.matrix.msc3401.call.member": 50,
     });
   });
 
@@ -205,6 +235,15 @@ describe("MatrixSpaces", () => {
       users: {
         "@jdoe:acme.example": 50,
       },
+      events: {
+        "org.matrix.msc3401.call.member": 50,
+        "org.matrix.msc4332.commands": 50,
+        "m.bot.commands": 50,
+        "org.matrix.msc3381.poll.response": 50,
+        "m.poll.response": 50,
+        "app.twake.chat.thread_resolved": 50,
+      },
+      redact: 75,
     });
 
     await spaces.setPowerLevels(ROOM, {
